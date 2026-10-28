@@ -1,0 +1,55 @@
+CATATAN PENGEMBANGAN TEMUKOS
+H1D025032 - Muhammad Raffi Alfarizi
+
+1. TEMA DAN PERAN
+Tema: katalog kos sekitar kampus.
+admin   = pengelola kos (boleh mencatat kos)
+anggota = pencari kos (boleh melihat daftar dan detail)
+
+2. STRUKTUR DATABASE (temukos_db)
+pengguna(id, username UNIQUE, nama, peran ENUM('admin','anggota'), hash_sandi, dibuat_pada)
+kos(id, pengguna_id FK -> pengguna.id, nama_kos, tipe ENUM('Putra','Putri','Campur'),
+    fasilitas ENUM('Kipas angin','AC'), kamar_mandi ENUM('Dalam','Luar'), harga INT UNSIGNED,
+    jarak_m INT UNSIGNED, alamat, ketersediaan ENUM('Tersedia','Penuh'), deskripsi (boleh kosong),
+    kontak, foto_kos (boleh kosong), dibuat_pada)
+Relasi satu ke banyak: satu pengguna mencatat banyak kos. Daftar dan detail memakai JOIN untuk
+menampilkan nama pencatat.
+
+3. ATURAN VALIDASI (SISI SERVER)
+Umum
+- Nama kos 3-150 karakter, alamat 10-150, kontak 5-60, deskripsi maksimal 2000.
+- Username registrasi 3-30 karakter (huruf, angka, garis bawah), kata sandi minimal 6 karakter.
+- Tipe, fasilitas, kamar mandi, dan ketersediaan dicek terhadap daftar putih ENUM.
+Khusus tema
+- Harga sewa harus 200.000 sampai 5.000.000 per bulan, jarak 0 sampai 20.000 meter (hanya digit).
+- Aturan lintas kolom 1: fasilitas AC wajib harga minimal 500.000.
+- Aturan lintas kolom 2: ketersediaan Penuh wajib deskripsi minimal 10 karakter.
+Foto
+- Isi berkas dicek dengan finfo (bukan dari ekstensi), hanya JPG, PNG, WEBP, maksimal 2 MB,
+  nama berkas diacak, disimpan di uploads/.
+Semua galat dikumpulkan lalu ditampilkan sekaligus, dan isian yang sudah benar tetap terisi.
+
+4. CATATAN KEAMANAN
+- Seluruh kueri berparameter memakai prepared statement (prepare, bind_param, execute).
+- Kata sandi memakai password_hash dan password_verify, tidak pernah disimpan sebagai teks asli.
+- session_regenerate_id(true) saat login, cookie sesi httponly dan samesite Lax.
+- Pesan login sama untuk username salah dan sandi salah, agar akun tidak bisa ditebak.
+- Semua data dari basis data atau input pengguna ditampilkan lewat e() (htmlspecialchars).
+- Pola Post/Redirect/Get setelah tambah data dan registrasi, sehingga refresh tidak menggandakan data.
+- Id di detail.php divalidasi sebagai bilangan bulat (400 bila tidak valid) dan dicek keberadaannya (404).
+- tambah.php hanya untuk admin (403 untuk anggota), dicek di sisi server, bukan hanya menyembunyikan menu.
+- Registrasi selalu membuat peran anggota, peran tidak dibaca dari formulir.
+- Galat basis data dicatat lewat error_log, pengguna hanya melihat pesan umum.
+
+5. KEPUTUSAN DESAIN
+- Susunan halaman: navbar kapsul, hero, lembar putih yang menimpa hero saat di-scroll, info layanan,
+  daftar kartu dengan filter tipe, dan footer.
+- Palet oranye dan krem. Warna teks di atas oranye memakai oranye gelap agar kontras memenuhi WCAG AA.
+- Hero memakai hero.mp4 bila ada, bila tidak memakai gambar kos.
+
+6. DI LUAR CAKUPAN
+Ubah data, hapus data, pencarian teks, dan paginasi (sesuai lembar spesifikasi).
+
+7. KETERBATASAN
+- Foto contoh pada data awal memakai satu gambar ilustrasi yang sama untuk semua kos.
+- Formulir tidak memakai token CSRF karena tidak diminta pada lembar spesifikasi.
